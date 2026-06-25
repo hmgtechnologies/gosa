@@ -1,47 +1,48 @@
 -- =====================================================================
--- School Connect — Database Schema (Gen v7)
--- 39 tables, full Row-Level Security with least-privilege policies.
--- Idempotent: safe to re-run in Supabase SQL Editor.
+-- School Connect — Database Schema (Gen v8)
+-- =====================================================================
+-- Full Row-Level Security (RLS) with least-privilege policies.
+-- Idempotent: safe to re-run in the Supabase SQL Editor as many times
+-- as you like — every object uses "if not exists" or "drop ... if exists".
+--
+-- ⚠️  IMPORTANT — CORRECT ORDER OF OPERATIONS (fixes the v7 bug
+--     `ERROR: 42P01: relation "public.profiles" does not exist`):
+--
+--     1. Extensions
+--     2. ALL TABLES (profiles + parent_child created BEFORE any function
+--        or policy that references them)
+--     3. Helper functions (is_staff / is_admin / is_parent_of) — these
+--        depend on tables, so they MUST come after the tables
+--     4. New-user trigger
+--     5. Enable RLS + create policies
+--
+--     In v7 the helper functions were declared at the TOP of the file,
+--     BEFORE the tables they query, so the very first statement failed
+--     with 42P01. This version fixes the ordering permanently.
 -- =====================================================================
 
--- ======================== EXTENSIONS ========================
+
+-- ========================================================
+-- 1. EXTENSIONS
+-- ========================================================
 create extension if not exists "uuid-ossp";
+create extension if not exists "pgcrypto";
 
--- ======================== HELPER FUNCTIONS ========================
-create or replace function public.is_staff(uid uuid)
-returns boolean language sql security definer stable as $$
-  select exists (
-    select 1 from public.profiles
-    where id = uid and role in ('admin','principal','proprietor','head_teacher','staff')
-      and status = 'approved'
-  );
-$$;
 
-create or replace function public.is_admin(uid uuid)
-returns boolean language sql security definer stable as $$
-  select exists (
-    select 1 from public.profiles
-    where id = uid and role in ('admin','principal','proprietor')
-      and status = 'approved'
-  );
-$$;
+-- ========================================================
+-- 2. TABLES  (create EVERY table first — no functions yet)
+-- ========================================================
 
-create or replace function public.is_parent_of(uid uuid, child uuid)
-returns boolean language sql security definer stable as $$
-  select exists (
-    select 1 from public.parent_child
-    where parent_id = uid and student_id = child
-  );
-$$;
-
--- ======================== AUTH PROFILES ========================
+-- ---- 2.1 Auth profiles (the table every helper depends on) ----
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   full_name text,
   phone text,
-  role text not null default 'student' check (role in ('admin','principal','proprietor','head_teacher','staff','parent','student','bursar')),
-  status text not null default 'pending' check (status in ('pending','approved','suspended')),
+  role text not null default 'student'
+    check (role in ('admin','principal','proprietor','head_teacher','staff','parent','student','bursar')),
+  status text not null default 'pending'
+    check (status in ('pending','approved','suspended')),
   photo_url text,
   campus text,
   created_at timestamptz not null default now(),
@@ -49,27 +50,7 @@ create table if not exists public.profiles (
 );
 alter table public.profiles enable row level security;
 
--- Auto-create a profile on sign-up
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
-begin
-  insert into public.profiles (id, email, full_name, phone, role)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'full_name',''),
-    new.raw_user_meta_data->>'phone',
-    coalesce(new.raw_user_meta_data->>'role','student')
-  )
-  on conflict (id) do nothing;
-  return new;
-end; $$;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
--- ======================== CORE ACADEMIC TABLES ========================
+-- ---- 2.2 Core academic ----
 create table if not exists public.students (
   id uuid primary key default uuid_generate_v4(),
   admission_no text unique,
@@ -124,6 +105,18 @@ create table if not exists public.subjects (
 );
 alter table public.subjects enable row level security;
 
+-- parent_child must exist BEFORE the is_parent_of() function is created.
+create table if not exists public.parent_child (
+  id uuid primary key default uuid_generate_v4(),
+  parent_id uuid references public.profiles(id) on delete cascade,
+  student_id uuid references public.students(id) on delete cascade,
+  relationship text default 'parent',
+  verified boolean default false,
+  created_at timestamptz default now(),
+  unique(parent_id, student_id)
+);
+alter table public.parent_child enable row level security;
+
 create table if not exists public.attendance (
   id uuid primary key default uuid_generate_v4(),
   student_id uuid references public.students(id) on delete cascade,
@@ -141,7 +134,8 @@ create table if not exists public.results (
   subject text not null,
   class text, term text, session text,
   ca1 numeric, ca2 numeric, ca3 numeric, exam numeric,
-  total numeric generated always as (coalesce(ca1,0)+coalesce(ca2,0)+coalesce(ca3,0)+coalesce(exam,0)) stored,
+  total numeric generated always as
+    (coalesce(ca1,0)+coalesce(ca2,0)+coalesce(ca3,0)+coalesce(exam,0)) stored,
   grade text, remark text,
   teacher_id uuid references public.profiles(id),
   position int,
@@ -158,6 +152,8 @@ create table if not exists public.timetable (
 );
 alter table public.timetable enable row level security;
 
+-- NOTE: real table name is scheme_of_work. (v7 RLS loops wrongly used
+-- the alias 'sow' which caused: relation "public.sow" does not exist.)
 create table if not exists public.scheme_of_work (
   id uuid primary key default uuid_generate_v4(),
   subject text, class text, term text, session text,
@@ -181,8 +177,8 @@ create table if not exists public.library (
   id uuid primary key default uuid_generate_v4(),
   title text, author text, isbn text,
   category text, copies int default 1,
-  available int generated always as (copies - coalesce(lent,0)) stored,
   lent int default 0,
+  available int generated always as (copies - coalesce(lent,0)) stored,
   drive_link text,
   created_at timestamptz default now()
 );
@@ -218,7 +214,7 @@ create table if not exists public.promotions (
 );
 alter table public.promotions enable row level security;
 
--- ======================== FINANCIAL ========================
+-- ---- 2.3 Financial ----
 create table if not exists public.fee_structures (
   id uuid primary key default uuid_generate_v4(),
   class text, term text, session text,
@@ -280,7 +276,7 @@ create table if not exists public.transport (
 );
 alter table public.transport enable row level security;
 
--- ======================== COMMUNICATION ========================
+-- ---- 2.4 Communication ----
 create table if not exists public.announcements (
   id uuid primary key default uuid_generate_v4(),
   title text not null, body text,
@@ -317,7 +313,8 @@ create table if not exists public.complaints (
   type text, subject text, body text,
   urgency text default 'normal' check (urgency in ('low','normal','high','critical')),
   drive_link text,
-  status text default 'submitted' check (status in ('submitted','reviewing','in_progress','resolved','rejected')),
+  status text default 'submitted'
+    check (status in ('submitted','reviewing','in_progress','resolved','rejected')),
   assignee uuid references public.profiles(id),
   created_at timestamptz default now()
 );
@@ -335,12 +332,13 @@ create table if not exists public.notifications (
 );
 alter table public.notifications enable row level security;
 
--- ======================== VOTING (NEW in Gen v7) ========================
+-- ---- 2.5 Voting ----
 create table if not exists public.polls (
   id uuid primary key default uuid_generate_v4(),
   title text not null, description text,
-  type text default 'single_choice' check (type in ('single_choice','multiple_choice','yes_no','ranked')),
-  candidates jsonb default '[]'::jsonb,  -- [{id,name,info,photo}]
+  type text default 'single_choice'
+    check (type in ('single_choice','multiple_choice','yes_no','ranked')),
+  candidates jsonb default '[]'::jsonb,   -- [{id,name,info,photo}]
   opens_at timestamptz default now(),
   closes_at timestamptz,
   allow_multiple boolean default false,
@@ -362,7 +360,7 @@ create table if not exists public.poll_votes (
 );
 alter table public.poll_votes enable row level security;
 
--- ======================== MEDIA ========================
+-- ---- 2.6 Media & utility ----
 create table if not exists public.gallery (
   id uuid primary key default uuid_generate_v4(),
   album text, caption text,
@@ -417,24 +415,14 @@ create table if not exists public.departments (
 );
 alter table public.departments enable row level security;
 
-create table if not exists public.parent_child (
-  id uuid primary key default uuid_generate_v4(),
-  parent_id uuid references public.profiles(id) on delete cascade,
-  student_id uuid references public.students(id) on delete cascade,
-  relationship text default 'parent',
-  verified boolean default false,
-  created_at timestamptz default now(),
-  unique(parent_id, student_id)
-);
-alter table public.parent_child enable row level security;
-
--- ======================== ENTERPRISE ========================
+-- ---- 2.7 Enterprise ----
 create table if not exists public.admissions (
   id uuid primary key default uuid_generate_v4(),
   full_name text, dob date, gender text,
   parent_name text, parent_email text, parent_phone text,
   applying_for_class text,
-  status text default 'submitted' check (status in ('submitted','reviewing','accepted','enrolled','rejected')),
+  status text default 'submitted'
+    check (status in ('submitted','reviewing','accepted','enrolled','rejected')),
   notes text,
   created_at timestamptz default now()
 );
@@ -445,7 +433,8 @@ create table if not exists public.payroll (
   staff_id uuid references public.staff(id) on delete cascade,
   month text, year int,
   basic numeric, allowances numeric, deductions numeric,
-  net_pay numeric generated always as (coalesce(basic,0)+coalesce(allowances,0)-coalesce(deductions,0)) stored,
+  net_pay numeric generated always as
+    (coalesce(basic,0)+coalesce(allowances,0)-coalesce(deductions,0)) stored,
   status text default 'draft' check (status in ('draft','approved','paid')),
   created_at timestamptz default now()
 );
@@ -471,18 +460,19 @@ alter table public.alumni enable row level security;
 
 create table if not exists public.inventory (
   id uuid primary key default uuid_generate_v4(),
-  name text, category text,
-  quantity int, unit_value numeric,
-  location text, condition text default 'good',
+  item_name text, category text,
+  quantity int default 1, location text,
+  condition text default 'good',
   created_at timestamptz default now()
 );
 alter table public.inventory enable row level security;
 
 create table if not exists public.certificates (
   id uuid primary key default uuid_generate_v4(),
-  recipient text, type text,
-  issued_by text, date date,
-  body text, drive_link text,
+  student_id uuid references public.students(id) on delete cascade,
+  type text, serial_no text unique,
+  issued_on date default current_date,
+  signed_by text,
   created_at timestamptz default now()
 );
 alter table public.certificates enable row level security;
@@ -490,168 +480,413 @@ alter table public.certificates enable row level security;
 create table if not exists public.push_subscriptions (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid references public.profiles(id) on delete cascade,
-  subscription jsonb not null,
-  user_agent text,
-  updated_at timestamptz default now(),
-  unique(user_id, user_agent)
+  endpoint text, p256dh text, auth text,
+  created_at timestamptz default now(),
+  unique(user_id, endpoint)
 );
 alter table public.push_subscriptions enable row level security;
 
--- ======================== RLS POLICIES (95+ least-privilege) ========================
--- PROFILES
-drop policy if exists "profiles_self_read"     on public.profiles;
-drop policy if exists "profiles_self_insert"  on public.profiles;
-drop policy if exists "profiles_self_update"  on public.profiles;
-drop policy if exists "profiles_staff_read"   on public.profiles;
-drop policy if exists "profiles_admin_all"    on public.profiles;
-create policy "profiles_self_read"    on public.profiles for select using (auth.uid() = id);
-create policy "profiles_self_insert"  on public.profiles for insert with check (auth.uid() = id);
-create policy "profiles_self_update"  on public.profiles for update using (auth.uid() = id);
-create policy "profiles_staff_read"   on public.profiles for select using (public.is_staff(auth.uid()));
-create policy "profiles_admin_all"    on public.profiles for all using (public.is_admin(auth.uid()));
+-- =====================================================================
+-- ✨ NEW in Gen v8 — competitor-parity & enterprise modules
+--    (all use FREE tools only; no paid services, no AI APIs)
+-- =====================================================================
 
--- Generic helper macro: any authenticated user can read; staff writes
-do $$ declare t text; begin
-  for t in select unnest(array['students','staff','classes','subjects','timetable','sow','assignments','library','fee_structures','fee_payments','events','gallery','eresources','birthdays','idcards','departments','parent_child','admissions','hostel_allocations','alumni','inventory','certificates']) loop
-    execute format('drop policy if exists "read_%s" on public.%I', t, t);
-    execute format('create policy "read_%s" on public.%I for select using (auth.role() = ''authenticated'')', t, t);
-  end loop;
-end $$;
+-- Audit / activity log (PowerSchool, Infinite Campus, GegoK12 parity)
+create table if not exists public.activity_log (
+  id uuid primary key default uuid_generate_v4(),
+  actor_id uuid references public.profiles(id),
+  actor_email text,
+  action text,            -- e.g. 'create','update','delete','login'
+  entity text,            -- table or module affected
+  entity_id text,
+  details jsonb,
+  ip text,
+  created_at timestamptz default now()
+);
+alter table public.activity_log enable row level security;
 
--- Write policies for staff
-do $$ declare t text; begin
-  for t in select unnest(array['students','staff','classes','subjects','timetable','sow','assignments','library','fee_structures','events','gallery','eresources','birthdays','idcards','departments','admissions','hostel_allocations','alumni','inventory','certificates']) loop
+-- LMS: courses, lessons, submissions (Canvas / Schoology / ilerno parity)
+create table if not exists public.lms_courses (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null, description text,
+  subject text, class text, teacher text,
+  cover_url text,
+  created_at timestamptz default now()
+);
+alter table public.lms_courses enable row level security;
+
+create table if not exists public.lms_lessons (
+  id uuid primary key default uuid_generate_v4(),
+  course_id uuid references public.lms_courses(id) on delete cascade,
+  title text, content text,
+  video_url text, resource_link text,
+  position int default 0,
+  created_at timestamptz default now()
+);
+alter table public.lms_lessons enable row level security;
+
+create table if not exists public.lms_submissions (
+  id uuid primary key default uuid_generate_v4(),
+  assignment_id uuid references public.assignments(id) on delete cascade,
+  student_id uuid references public.students(id) on delete cascade,
+  submission_link text, note text,
+  score numeric, feedback text,
+  status text default 'submitted' check (status in ('submitted','graded','returned')),
+  submitted_at timestamptz default now()
+);
+alter table public.lms_submissions enable row level security;
+
+-- Lesson plans / curriculum (Chalk parity)
+create table if not exists public.lesson_plans (
+  id uuid primary key default uuid_generate_v4(),
+  teacher text, subject text, class text,
+  week int, term text, session text,
+  objectives text, content text, resources text,
+  status text default 'draft' check (status in ('draft','submitted','approved')),
+  created_at timestamptz default now()
+);
+alter table public.lesson_plans enable row level security;
+
+-- Behaviour / PBIS points (ClassDojo parity)
+create table if not exists public.behaviour_points (
+  id uuid primary key default uuid_generate_v4(),
+  student_id uuid references public.students(id) on delete cascade,
+  points int default 0,
+  reason text, badge text,
+  awarded_by uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
+alter table public.behaviour_points enable row level security;
+
+-- Special education / student support plans (Provision Map parity)
+create table if not exists public.support_plans (
+  id uuid primary key default uuid_generate_v4(),
+  student_id uuid references public.students(id) on delete cascade,
+  need_type text, intervention text,
+  goal text, review_date date,
+  outcome text, status text default 'active'
+    check (status in ('active','review','closed')),
+  created_at timestamptz default now()
+);
+alter table public.support_plans enable row level security;
+
+-- Fundraising / donations (Blackbaud / FreshSchools parity)
+create table if not exists public.donations (
+  id uuid primary key default uuid_generate_v4(),
+  campaign text, donor_name text, donor_email text,
+  amount numeric, method text,
+  note text, anonymous boolean default false,
+  recorded_by uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
+alter table public.donations enable row level security;
+
+-- Substitute teacher / cover management
+create table if not exists public.substitutions (
+  id uuid primary key default uuid_generate_v4(),
+  date date default current_date,
+  absent_teacher text, substitute_teacher text,
+  class text, subject text, period text,
+  status text default 'planned' check (status in ('planned','done','cancelled')),
+  created_at timestamptz default now()
+);
+alter table public.substitutions enable row level security;
+
+-- Help desk / IT tickets (internal staff requests)
+create table if not exists public.helpdesk_tickets (
+  id uuid primary key default uuid_generate_v4(),
+  submitted_by uuid references public.profiles(id),
+  category text, subject text, body text,
+  priority text default 'normal' check (priority in ('low','normal','high','urgent')),
+  status text default 'open' check (status in ('open','in_progress','resolved','closed')),
+  assignee uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
+alter table public.helpdesk_tickets enable row level security;
+
+-- Online payment intents (free Paystack / Flutterwave / bank-transfer links)
+create table if not exists public.payment_intents (
+  id uuid primary key default uuid_generate_v4(),
+  student_id uuid references public.students(id) on delete cascade,
+  amount numeric, provider text,        -- 'paystack' | 'flutterwave' | 'bank_transfer'
+  reference text, checkout_url text,
+  status text default 'pending' check (status in ('pending','paid','failed','cancelled')),
+  created_at timestamptz default now()
+);
+alter table public.payment_intents enable row level security;
+
+
+-- ========================================================
+-- 3. HELPER FUNCTIONS  (now safe — tables already exist)
+-- ========================================================
+create or replace function public.is_staff(uid uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.profiles
+    where id = uid
+      and role in ('admin','principal','proprietor','head_teacher','staff','bursar')
+      and status = 'approved'
+  );
+$$;
+
+create or replace function public.is_admin(uid uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.profiles
+    where id = uid
+      and role in ('admin','principal','proprietor')
+      and status = 'approved'
+  );
+$$;
+
+create or replace function public.is_parent_of(uid uuid, child uuid)
+returns boolean language sql security definer stable as $$
+  select exists (
+    select 1 from public.parent_child
+    where parent_id = uid and student_id = child
+  );
+$$;
+
+
+-- ========================================================
+-- 4. NEW-USER TRIGGER (auto-create a profile on sign-up)
+-- ========================================================
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.profiles (id, email, full_name, phone, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name',''),
+    new.raw_user_meta_data->>'phone',
+    coalesce(new.raw_user_meta_data->>'role','student')
+  )
+  on conflict (id) do nothing;
+  return new;
+end; $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+
+-- ========================================================
+-- 5. ROW-LEVEL SECURITY POLICIES
+-- ========================================================
+
+-- ---- Profiles ----
+drop policy if exists "profiles_self_read"   on public.profiles;
+drop policy if exists "profiles_self_update" on public.profiles;
+drop policy if exists "profiles_staff_read"  on public.profiles;
+drop policy if exists "profiles_admin_all"   on public.profiles;
+create policy "profiles_self_read"   on public.profiles for select using (auth.uid() = id);
+create policy "profiles_self_update" on public.profiles for update using (auth.uid() = id);
+create policy "profiles_staff_read"  on public.profiles for select using (public.is_staff(auth.uid()));
+create policy "profiles_admin_all"   on public.profiles for all    using (public.is_admin(auth.uid()));
+
+-- ---- Generic: any authenticated user reads; staff writes ----
+-- (scheme_of_work is now spelled correctly — no more 'sow' alias bug.)
+do $$
+declare t text;
+declare read_tables text[] := array[
+  'students','staff','classes','subjects','timetable','scheme_of_work','assignments',
+  'library','fee_structures','events','gallery','eresources','birthdays','idcards',
+  'departments','admissions','hostel_allocations','alumni','inventory','certificates',
+  'lms_courses','lms_lessons','lesson_plans','behaviour_points','substitutions','donations'
+];
+begin
+  foreach t in array read_tables loop
+    execute format('drop policy if exists "read_%s"  on public.%I', t, t);
     execute format('drop policy if exists "write_%s" on public.%I', t, t);
-    execute format('create policy "write_%s" on public.%I for all using (public.is_staff(auth.uid()))', t, t);
+    execute format('create policy "read_%s"  on public.%I for select using (auth.role() = ''authenticated'')', t, t);
+    execute format('create policy "write_%s" on public.%I for all    using (public.is_staff(auth.uid()))', t, t);
   end loop;
 end $$;
 
--- Attendance: students can see own; staff manage
+-- ---- Attendance: parents see own children; staff manage ----
 drop policy if exists "att_read"  on public.attendance;
 drop policy if exists "att_write" on public.attendance;
 create policy "att_read"  on public.attendance for select using (
-  student_id in (select id from public.students where guardian_email = auth.jwt()->>'email')
+  public.is_parent_of(auth.uid(), student_id)
+  or student_id in (select id from public.students where guardian_email = auth.jwt()->>'email')
   or public.is_staff(auth.uid())
 );
 create policy "att_write" on public.attendance for all using (public.is_staff(auth.uid()));
 
--- Results: parents see own children; staff manage
+-- ---- Results: parents see own children; staff manage ----
 drop policy if exists "res_read"  on public.results;
 drop policy if exists "res_write" on public.results;
 create policy "res_read"  on public.results for select using (
-  public.is_parent_of(auth.uid(), student_id)
-  or public.is_staff(auth.uid())
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
 );
 create policy "res_write" on public.results for all using (public.is_staff(auth.uid()));
 
--- Conduct/Health: parents see own; staff manage
+-- ---- Conduct / Health / Behaviour / Support: parents see own; staff manage ----
 drop policy if exists "cond_read"  on public.conduct;
 drop policy if exists "cond_write" on public.conduct;
 create policy "cond_read"  on public.conduct for select using (
-  public.is_parent_of(auth.uid(), student_id)
-  or public.is_staff(auth.uid())
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
 );
 create policy "cond_write" on public.conduct for all using (public.is_staff(auth.uid()));
 
 drop policy if exists "hlth_read"  on public.health;
 drop policy if exists "hlth_write" on public.health;
 create policy "hlth_read"  on public.health for select using (
-  public.is_parent_of(auth.uid(), student_id)
-  or public.is_staff(auth.uid())
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
 );
 create policy "hlth_write" on public.health for all using (public.is_staff(auth.uid()));
 
--- Fees: parents see own; staff manage
+drop policy if exists "sp_read"  on public.support_plans;
+drop policy if exists "sp_write" on public.support_plans;
+create policy "sp_read"  on public.support_plans for select using (
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
+);
+create policy "sp_write" on public.support_plans for all using (public.is_staff(auth.uid()));
+
+-- ---- Fees: parents see own; staff manage ----
 drop policy if exists "fp_read"  on public.fee_payments;
 drop policy if exists "fp_write" on public.fee_payments;
 create policy "fp_read"  on public.fee_payments for select using (
-  public.is_parent_of(auth.uid(), student_id)
-  or public.is_staff(auth.uid())
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
 );
 create policy "fp_write" on public.fee_payments for all using (public.is_staff(auth.uid()));
 
--- Finance: admin only
+-- ---- Payment intents: parents see own; staff manage ----
+drop policy if exists "pi_read"  on public.payment_intents;
+drop policy if exists "pi_write" on public.payment_intents;
+create policy "pi_read"  on public.payment_intents for select using (
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
+);
+create policy "pi_write" on public.payment_intents for all using (public.is_staff(auth.uid()));
+
+-- ---- Finance / Payroll / Donations: admin only ----
 drop policy if exists "fin_all" on public.finance_entries;
 create policy "fin_all" on public.finance_entries for all using (public.is_admin(auth.uid()));
 
--- Leave: staff read/write own; admin manages
-drop policy if exists "lr_all" on public.leave_requests;
-create policy "lr_all" on public.leave_requests for all using (
-  auth.uid() in (select id from public.profiles where id = staff_id or is_staff(auth.uid()))
-);
+drop policy if exists "pay_all" on public.payroll;
+create policy "pay_all" on public.payroll for all using (public.is_admin(auth.uid()));
 
--- Visitors: anyone can insert (gate); staff reads
+drop policy if exists "don_admin" on public.donations;
+create policy "don_admin" on public.donations for all using (public.is_admin(auth.uid()));
+
+-- ---- Leave: staff read/write; admin manages ----
+drop policy if exists "lr_all" on public.leave_requests;
+create policy "lr_all" on public.leave_requests for all using (public.is_staff(auth.uid()));
+
+-- ---- Visitors: anyone can sign in at the gate; staff reads ----
 drop policy if exists "vis_insert" on public.visitors;
 drop policy if exists "vis_read"   on public.visitors;
 create policy "vis_insert" on public.visitors for insert with check (true);
 create policy "vis_read"   on public.visitors for select using (public.is_staff(auth.uid()));
 
--- Transport
+-- ---- Transport ----
 drop policy if exists "tr_all" on public.transport;
 create policy "tr_all" on public.transport for all using (public.is_staff(auth.uid()));
 
--- Announcements: everyone reads; staff writes
+-- ---- Announcements: everyone reads; staff writes ----
 drop policy if exists "ann_read"  on public.announcements;
 drop policy if exists "ann_write" on public.announcements;
 create policy "ann_read"  on public.announcements for select using (auth.role() = 'authenticated');
 create policy "ann_write" on public.announcements for all using (public.is_staff(auth.uid()));
 
--- Messages: only participants
+-- ---- Messages: only the two participants ----
 drop policy if exists "msg_all" on public.messages;
 create policy "msg_all" on public.messages for all using (
   auth.uid() = from_id or auth.uid() = to_id
 );
 
--- Complaints: submitter sees own; staff sees all
+-- ---- Complaints: submitter sees own; staff sees all ----
 drop policy if exists "comp_all" on public.complaints;
 create policy "comp_all" on public.complaints for all using (
   submitted_by = auth.uid() or public.is_staff(auth.uid())
 );
 
--- Notifications: everyone reads own; staff writes
+-- ---- Help desk: submitter sees own; staff sees all ----
+drop policy if exists "hd_all" on public.helpdesk_tickets;
+create policy "hd_all" on public.helpdesk_tickets for all using (
+  submitted_by = auth.uid() or public.is_staff(auth.uid())
+);
+
+-- ---- Notifications: everyone reads; staff writes ----
 drop policy if exists "notif_read"  on public.notifications;
 drop policy if exists "notif_write" on public.notifications;
 create policy "notif_read"  on public.notifications for select using (auth.role() = 'authenticated');
 create policy "notif_write" on public.notifications for all using (public.is_staff(auth.uid()));
 
--- ===== VOTING (Gen v7) =====
+-- ---- Voting ----
 drop policy if exists "polls_read"  on public.polls;
 drop policy if exists "polls_write" on public.polls;
 create policy "polls_read"  on public.polls for select using (auth.role() = 'authenticated');
 create policy "polls_write" on public.polls for all using (public.is_staff(auth.uid()));
 
-drop policy if exists "pv_read"  on public.poll_votes;
+drop policy if exists "pv_read"   on public.poll_votes;
 drop policy if exists "pv_insert" on public.poll_votes;
 drop policy if exists "pv_update" on public.poll_votes;
-create policy "pv_read"  on public.poll_votes for select using (auth.uid() = voter_id or public.is_staff(auth.uid()));
+create policy "pv_read"   on public.poll_votes for select using (auth.uid() = voter_id or public.is_staff(auth.uid()));
 create policy "pv_insert" on public.poll_votes for insert with check (auth.uid() = voter_id);
 create policy "pv_update" on public.poll_votes for update using (auth.uid() = voter_id);
 
--- Push subscriptions
+-- ---- Push subscriptions: each user manages own ----
 drop policy if exists "ps_all" on public.push_subscriptions;
 create policy "ps_all" on public.push_subscriptions for all using (auth.uid() = user_id);
 
--- Payroll: admin only
-drop policy if exists "pay_all" on public.payroll;
-create policy "pay_all" on public.payroll for all using (public.is_admin(auth.uid()));
-
--- Reports
+-- ---- Reports / Promotions ----
 drop policy if exists "rep_all" on public.reports;
 create policy "rep_all" on public.reports for all using (public.is_staff(auth.uid()));
 
--- Promotions
 drop policy if exists "prom_all" on public.promotions;
 create policy "prom_all" on public.promotions for all using (public.is_staff(auth.uid()));
 
--- Parent-child
-drop policy if exists "pc_read" on public.parent_child;
+-- ---- Parent-child ----
+drop policy if exists "pc_read"  on public.parent_child;
 drop policy if exists "pc_write" on public.parent_child;
-create policy "pc_read" on public.parent_child for select using (
+create policy "pc_read"  on public.parent_child for select using (
   parent_id = auth.uid() or public.is_staff(auth.uid())
 );
 create policy "pc_write" on public.parent_child for all using (public.is_staff(auth.uid()));
 
+-- ---- LMS submissions: student sees own; staff manage ----
+drop policy if exists "sub_read"  on public.lms_submissions;
+drop policy if exists "sub_write" on public.lms_submissions;
+create policy "sub_read"  on public.lms_submissions for select using (
+  public.is_parent_of(auth.uid(), student_id) or public.is_staff(auth.uid())
+);
+create policy "sub_write" on public.lms_submissions for all using (public.is_staff(auth.uid()));
+
+-- ---- Activity log: staff/admin read; anyone authenticated may insert ----
+drop policy if exists "al_read"   on public.activity_log;
+drop policy if exists "al_insert" on public.activity_log;
+create policy "al_read"   on public.activity_log for select using (public.is_admin(auth.uid()));
+create policy "al_insert" on public.activity_log for insert with check (auth.role() = 'authenticated');
+
+
 -- =====================================================================
--- DONE. 39 tables, 95+ RLS policies.
+-- 6. CONVENIENCE VIEW — live poll results
 -- =====================================================================
-select 'School Connect schema v7 installed successfully ✅' as status;
+create or replace view public.poll_results as
+select p.id as poll_id, p.title,
+       coalesce(sum(v.c), 0) as total_votes,
+       coalesce(jsonb_agg(jsonb_build_object('candidate', v.candidate_id, 'votes', v.c))
+                filter (where v.candidate_id is not null), '[]'::jsonb) as breakdown
+from public.polls p
+left join lateral (
+  select candidate_id, count(*) as c
+  from public.poll_votes
+  where poll_id = p.id
+  group by candidate_id
+) v on true
+group by p.id, p.title;
+
+
+-- =====================================================================
+-- DONE ✅
+-- 50+ tables · full RLS · correct creation order · no 42P01 errors.
+--
+-- NEXT STEP: promote yourself to admin AFTER you sign up in the app:
+--   update public.profiles
+--      set role = 'admin', status = 'approved'
+--    where email = 'your-email@example.com';
+-- =====================================================================
+select 'School Connect schema v8 installed successfully ✅' as status;

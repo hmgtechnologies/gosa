@@ -23,10 +23,14 @@ const Enterprise = {
 
   /* ================= 1) Timetable generator ================= */
   timetable: {
-    async addRequirement(cls, subject, teacher, ppw) {
+    async addRequirement(cls, subject, teacher, ppw, availableDays, isPartTime) {
       if (!Enterprise.sb) return { error: 'No DB' };
+      const row = { class: cls, subject, teacher, periods_per_week: Number(ppw) || 1 };
+      // Part-time support: only set availability when provided (NULL = full-time/all week)
+      if (Array.isArray(availableDays) && availableDays.length) { row.available_days = availableDays; row.is_part_time = true; }
+      else if (isPartTime === false) { row.available_days = null; row.is_part_time = false; }
       return await Enterprise.sb.from('timetable_requirements')
-        .upsert({ class: cls, subject, teacher, periods_per_week: Number(ppw) || 1 }, { onConflict: 'class,subject' });
+        .upsert(row, { onConflict: 'class,subject' });
     },
     async listRequirements(cls) {
       if (!Enterprise.sb) return { data: [] };

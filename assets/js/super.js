@@ -40,22 +40,40 @@ const Super = {
      ================================================================== */
   chatbot: {
     open: false, history: [],
+    /* Enhanced knowledge base: each entry has keywords (m), a reply (r), an
+       optional page link (p) and optional follow-up chips (chips). */
     KB: [
-      { m: ['login', 'sign in', 'password', 'cannot log'], r: 'To sign in, open the **Login** page and use your registered email + password. New here? Choose **Request access**; an admin approves you before you can sign in. Forgot your password? Use the reset link on the login page.' },
-      { m: ['cbt', 'exam', 'test', 'quiz'], r: 'Open **CBT / Online Exams**. Teachers create an exam, upload questions by CSV, and share a 6-character **code** or link. Map an exam to a report-card column and the score flows into the report card automatically.' },
-      { m: ['report', 'result', 'grade', 'card'], r: 'Open **Report Cards**. Add custom columns (CA1, CA2, Assignment, Project, Exam), apportion a max mark to each, and enter scores. CBT/online results auto-fill their mapped columns. Totals, % and grades compute live.' },
-      { m: ['fee', 'pay', 'invoice', 'balance'], r: 'Open **Fees**. View balances, record payments and print receipts. For online payment links, use **Online Fee Payments** (Paystack/Flutterwave/bank transfer — free to integrate).' },
-      { m: ['attendance', 'register', 'present', 'absent'], r: 'Open **Attendance**. Mark daily/class attendance (present/absent/late/excused). Parents see only their own children.' },
-      { m: ['vote', 'poll', 'prefect', 'election'], r: 'Open **Voting & Polls** to run prefect/head-boy/girl elections and staff polls with live, anonymous results.' },
-      { m: ['notif', 'alert', 'announce', 'broadcast'], r: 'Notifications fan out in-app + browser push + email + WhatsApp + SMS. Staff post via **Announcements** / **Broadcast**; everyone receives them.' },
-      { m: ['install', 'app', 'pwa', 'offline'], r: 'This portal is an installable app (PWA). Tap the **Install** banner, or your browser menu → *Install / Add to Home Screen* for offline access and push notifications.' },
-      { m: ['id card', 'idcard', 'badge', 'qr'], r: 'Open **Digital ID Cards** to generate branded student/staff cards with a scannable QR code — printable straight from the browser.' },
-      { m: ['certificate', 'cert', 'testimonial'], r: 'Open **Certificates** to issue branded, printable certificates with a verification code. CBT exams also issue certificate codes automatically.' },
-      { m: ['backup', 'export', 'delete', 'restore', 'data'], r: 'Admins can open **Admin Data** to read, delete, back up (JSON) and restore every table, and export any table to CSV. Every action is logged.' },
-      { m: ['analytics', 'kpi', 'chart', 'report dashboard'], r: 'Open **Analytics** for live, platform-wide KPIs and charts (enrollment, CBT performance, fees, attendance) to support decisions.' },
-      { m: ['search', 'find', 'where', 'go to'], r: 'Press **Ctrl/Cmd + K** anywhere to open the global command palette and jump to any module or search students, staff and exams.' },
-      { m: ['cost', 'price', 'free', 'fee for'], r: 'The platform is **free to run forever** on free Supabase + free hosting. No monthly fees, no AI-API costs. You own all your data.' }
+      { m: ['login', 'sign in', 'signin', 'password', 'cannot log', "can't log", 'access account'], r: 'To sign in, open the **Login** page and use your registered email + password. New here? Choose **Request access** — an admin approves you first. Forgot your password? Use the reset link on the login page.', p: 'login.html', chips: ['How do I get approved?', 'Enable 2FA'] },
+      { m: ['approve', 'pending', 'activate account', 'admin approval'], r: 'New accounts start as **pending**. An admin opens **Admin Data → profiles** (or Settings) and sets your status to *approved*. Then you can sign in.', p: 'admin-data.html' },
+      { m: ['2fa', 'two factor', 'two-factor', 'otp', 'secure my account'], r: 'Turn on **2-Factor Authentication** in **Settings** — it uses a free email one-time code (no SMS/AI cost).', p: 'settings.html' },
+      { m: ['cbt', 'exam', 'test', 'quiz', 'online exam', 'set exam'], r: 'Open **CBT / Online Exams**. Create an exam, upload questions by CSV (17 question types), then share a 6-character **code** or link. Map the exam to a report-card column and scores flow into the report card automatically.', p: 'cbt.html', chips: ['How do students take it?', 'How are CBT scores graded?'] },
+      { m: ['take exam', 'student exam', 'exam code', 'join exam', 'write exam'], r: 'Students open the exam link or go to **Take Exam**, enter the **6-character code** and their name — no account needed (open mode). A timer, navigator and anti-cheat run during the exam.', p: 'cbt-exam.html' },
+      { m: ['grade', 'scoring', 'mark scheme', 'how are scores', 'negative marking'], r: 'CBT auto-grades all 17 question types (with partial credit and optional **negative marking**). Essays use rule-based keyword scoring. No AI is used.', p: 'cbt.html' },
+      { m: ['report', 'result', 'report card', 'grades', 'ca1', 'ca2'], r: 'Open **Report Cards**. Add custom columns (CA1, CA2, Assignment, Project, Exam), apportion a max mark to each, and enter scores. CBT/online results auto-fill their mapped columns; totals, % and grades compute live.', p: 'report-cards.html', chips: ['Pull CBT into report card', 'Export report cards'] },
+      { m: ['fee', 'pay', 'invoice', 'balance', 'receipt', 'school fees'], r: 'Open **Fees** to view balances, record payments and print receipts. For online payment links use **Online Fee Payments** (Paystack/Flutterwave/bank transfer — free to integrate; you pay only the gateway transaction fee).', p: 'fees.html' },
+      { m: ['attendance', 'register', 'present', 'absent', 'mark attendance'], r: 'Open **Attendance** to mark daily/class attendance (present/absent/late/excused). Parents see only their own children. For self check-in, use **QR Check-in**.', p: 'attendance.html', chips: ['QR check-in', 'Attendance report'] },
+      { m: ['qr', 'check in', 'check-in', 'checkin', 'scan'], r: 'Open **QR Check-in**. Students scan their ID-card QR (or type their admission number) to check in — no biometric hardware needed.', p: 'checkin.html' },
+      { m: ['timetable', 'schedule', 'periods', 'time table'], r: 'Open **Auto-Timetable** to build a conflict-free timetable from each subject weekly period demand. It supports **part-time teachers** — tick *Part-time* and choose the days they attend; they are only scheduled on those days.', p: 'timetable-generator.html', chips: ['Add a part-time teacher', 'Why are some periods unplaced?'] },
+      { m: ['part time', 'part-time', 'visiting teacher', 'specific day'], r: 'In **Auto-Timetable**, tick **Part-time teacher** and select the weekdays that teacher attends (e.g. Tue & Thu). The generator will only place their periods on those days. If their periods cannot all fit, it tells you how many are *unplaced*.', p: 'timetable-generator.html' },
+      { m: ['vote', 'poll', 'prefect', 'election', 'head boy', 'head girl'], r: 'Open **Voting & Polls** to run prefect / head-boy / head-girl elections and staff polls with live, anonymous results.', p: 'voting.html' },
+      { m: ['survey', 'feedback', 'form', 'questionnaire'], r: 'Open **Surveys** to create anonymous-optional feedback forms and collect responses (separate from elections).', p: 'surveys.html' },
+      { m: ['notif', 'alert', 'announce', 'broadcast', 'message parent'], r: 'Notifications fan out in-app + browser push + email + WhatsApp + SMS. Staff post via **Announcements** / **Result Broadcast**; everyone receives them.', p: 'announcements.html' },
+      { m: ['diary', 'homework', 'home work', 'assignment log'], r: 'Open **Diary** to log daily homework, classwork and behaviour notes; parents can view and acknowledge them.', p: 'diary.html' },
+      { m: ['install', 'app', 'pwa', 'offline', 'home screen'], r: 'This portal is an installable app (PWA). Tap the **Install** banner, or your browser menu → *Install / Add to Home Screen* for offline access and push notifications.' },
+      { m: ['id card', 'idcard', 'badge', 'student card'], r: 'Open **ID Cards** to generate branded student/staff cards with a scannable QR code — printable straight from the browser.', p: 'idcards.html' },
+      { m: ['certificate', 'cert', 'testimonial'], r: 'Open **Certificates** to issue branded, printable certificates with a verification code. CBT exams also issue certificate codes automatically.', p: 'certificates.html' },
+      { m: ['library', 'book', 'borrow'], r: 'Open **Library** to catalogue books and track lending and returns.', p: 'library.html' },
+      { m: ['menu', 'meal', 'food', 'canteen', 'cafeteria'], r: 'Open **Menu** to plan weekly meals with allergen notes for parents.', p: 'menu.html' },
+      { m: ['backup', 'export', 'delete', 'restore', 'data console'], r: 'Admins open **Admin Data** to read, delete, back up (JSON) and restore every table, and export any table to CSV. Every action is logged.', p: 'admin-data.html' },
+      { m: ['analytics', 'kpi', 'chart', 'dashboard stats', 'insight'], r: 'Open **Analytics** for live, platform-wide KPIs and charts (enrollment, CBT performance, fees, attendance) to support decisions.', p: 'analytics.html' },
+      { m: ['language', 'translate', 'french', 'hausa', 'yoruba', 'igbo', 'accessibility', 'font size', 'contrast'], r: 'Open **Settings** to switch language (English/French/Kiswahili/Hausa/Yoruba/Igbo) and adjust accessibility (font size, high contrast).', p: 'settings.html' },
+      { m: ['search', 'find', 'where is', 'go to', 'command'], r: 'Press **Ctrl/Cmd + K** anywhere to open the global command palette and jump to any module or search students, staff and exams.' },
+      { m: ['dark mode', 'theme', 'night'], r: 'Click the **🌙 button** in the top bar to toggle dark mode. Your choice is remembered.' },
+      { m: ['cost', 'price', 'free', 'subscription', 'monthly'], r: 'The platform is **free to run forever** on free Supabase + free hosting. No monthly fees, no AI-API costs. You own all your data.' },
+      { m: ['deploy', 'host', 'supabase', 'go live', 'setup'], r: 'See **DEPLOYMENT-GUIDE.md** in your download: create a free Supabase project, run the SQL files in order, paste your keys into `assets/js/config.js`, and host the folder on GitHub Pages / Netlify / Vercel / Cloudflare.' },
+      { m: ['contact', 'support', 'help me', 'human', 'whatsapp'], r: 'Need a human? Use the **WhatsApp** / email contact in the footer, or reach HMG Concepts. I can answer questions about any module here too.' }
     ],
+    QUICK: ['How do I create a CBT exam?', 'Set up report cards', 'Add a part-time teacher', 'Record fees', 'Enable 2FA'],
     mount() {
       if (typeof document === 'undefined' || document.getElementById('sc-chatbot')) return;
       const wrap = document.createElement('div');
@@ -78,7 +96,7 @@ const Super = {
       document.getElementById('sc-chat-x').onclick = () => Super.chatbot.toggle(false);
       document.getElementById('sc-chat-send').onclick = () => Super.chatbot.send();
       document.getElementById('sc-chat-in').addEventListener('keydown', e => { if (e.key === 'Enter') Super.chatbot.send(); });
-      this.history.push({ from: 'bot', msg: 'Hi! 👋 I\'m the ' + ((Super.school && Super.school.name) || 'school') + ' assistant. Ask me about **CBT**, **results**, **fees**, **attendance**, **voting**, **install** or press **Ctrl+K** to search.' });
+      this.history.push({ from: 'bot', msg: 'Hi! 👋 I\'m the ' + ((Super.school && Super.school.name) || 'school') + ' assistant. Ask me anything about the portal, or tap a suggestion below. Tip: press **Ctrl+K** to search.', chips: this.QUICK });
     },
     toggle(force) {
       const w = document.getElementById('sc-chat-win'); if (!w) return;
@@ -86,23 +104,40 @@ const Super = {
       w.style.display = this.open ? 'flex' : 'none';
       if (this.open) { this.render(); const i = document.getElementById('sc-chat-in'); if (i) i.focus(); }
     },
+    ask(text) { const i = document.getElementById('sc-chat-in'); if (i) i.value = text; this.send(); },
     send() {
       const i = document.getElementById('sc-chat-in'); if (!i) return;
       const msg = i.value.trim(); if (!msg) return;
       this.history.push({ from: 'user', msg }); i.value = ''; this.render();
-      setTimeout(() => { this.history.push({ from: 'bot', msg: this.reply(msg) }); this.render(); }, 250);
+      setTimeout(() => { const a = this.answer(msg); this.history.push({ from: 'bot', msg: a.r, link: a.p, chips: a.chips }); this.render(); }, 220);
     },
-    reply(msg) {
-      const l = msg.toLowerCase();
-      for (const e of this.KB) if (e.m.some(k => l.includes(k))) return e.r;
-      if (l.includes('thank')) return 'You\'re welcome! 🎉';
-      if (l.includes('hi') || l.includes('hello')) return 'Hello! Ask me about CBT, results, fees, attendance, voting or installation.';
-      return 'I\'m not sure about that. Try **CBT**, **report cards**, **fees**, **attendance**, **voting**, **notifications**, **install**, or press **Ctrl+K** to search the whole portal.';
+    /* Scored, fuzzy keyword matching — picks the BEST entry, not just the first.
+       Returns { r: replyText, p: pageLink, chips: [followups] }. */
+    answer(msg) {
+      const l = ' ' + msg.toLowerCase().replace(/[^a-z0-9 ]/g, ' ') + ' ';
+      let best = null, bestScore = 0;
+      for (const e of this.KB) {
+        let score = 0;
+        for (const k of e.m) {
+          if (l.includes(' ' + k + ' ') || l.includes(k)) score += k.split(' ').length + k.length / 10;
+        }
+        if (score > bestScore) { bestScore = score; best = e; }
+      }
+      if (best && bestScore > 0) return { r: best.r, p: best.p, chips: best.chips };
+      if (/\b(thanks|thank you|thx)\b/.test(l)) return { r: 'You\'re welcome! 🎉 Anything else?', chips: this.QUICK };
+      if (/\b(hi|hello|hey|good (morning|afternoon|evening))\b/.test(l)) return { r: 'Hello! How can I help? Pick a topic:', chips: this.QUICK };
+      if (/\b(bye|goodbye)\b/.test(l)) return { r: 'Goodbye! 👋 Reopen me anytime from the 💬 button.' };
+      // No match → suggest closest topics + Ctrl+K
+      return { r: 'I\'m not sure about that exact wording, but here are things I can help with — tap one, or press **Ctrl+K** to search the whole portal.', chips: ['CBT exams', 'Report cards', 'Fees', 'Attendance', 'Timetable', 'Voting'] };
     },
     render() {
       const box = document.getElementById('sc-chat-msgs'); if (!box) return;
-      box.innerHTML = this.history.map(m => `<div style="margin:8px 0;display:flex;${m.from === 'user' ? 'justify-content:flex-end' : ''}">
-        <div style="max-width:80%;padding:9px 12px;border-radius:12px;${m.from === 'user' ? 'background:var(--primary,#4f46e5);color:#fff' : 'background:#fff;border:1px solid #e2e8f0'}">${Super.esc(m.msg).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</div></div>`).join('');
+      box.innerHTML = this.history.map(m => {
+        const bubble = `<div style="margin:8px 0;display:flex;${m.from === 'user' ? 'justify-content:flex-end' : ''}">
+          <div style="max-width:82%;padding:9px 12px;border-radius:12px;${m.from === 'user' ? 'background:var(--primary,#4f46e5);color:#fff' : 'background:#fff;border:1px solid #e2e8f0'}">${Super.esc(m.msg).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}${m.link ? '<div style="margin-top:8px"><a href="' + Super.esc(m.link) + '" style="color:var(--primary,#4f46e5);font-weight:700;text-decoration:none">Open page →</a></div>' : ''}</div></div>`;
+        const chips = (m.chips && m.chips.length) ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px">${m.chips.map(c => `<button onclick="Super.chatbot.ask('${Super.esc(c).replace(/'/g, "\\'")}')" style="background:#eef2ff;color:var(--primary,#4f46e5);border:1px solid #c7d2fe;border-radius:14px;padding:5px 11px;font-size:.78rem;cursor:pointer">${Super.esc(c)}</button>`).join('')}</div>` : '';
+        return bubble + chips;
+      }).join('');
       box.scrollTop = box.scrollHeight;
     }
   },

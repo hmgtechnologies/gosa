@@ -7,18 +7,19 @@ window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 window.SCHOOL = {
   name:    'God Of Seed Academy',
   short:   'GOSA',
-  motto:   'Excellent in Character and Academics',
+  motto:   'Excellence in Learning and Character',
   currency:'₦',
-  phone:   '08088667076',
+  phone:   '',
   email:   'godofseedacademy@gmail.com',
-  address: 'Agbado, Ifo LG, Ogun State',
+  address: '63B, Ishaga Abosule Street, Agbado Crossing, Ogun State.',
   campuses:[],
-  theme:   'theme2',
+  theme:   'theme1',
   font:    'inter',
   layout:  'layout0',
-  modules: ["students","staff","classes","attendance","results","timetable","sow","cbt","assignments","conduct","promotion","lms","gamification","fees","finance","leave","announcements","messages","inbox","complaints","broadcast","voting","parent_meeting","gallery","eresources","birthdays","idcards","reports","directory","departments","parents","school_calendar","lost_found","admissions","hr","certificates","analytics"],
+  modules: ["students","staff","classes","attendance","results","timetable","sow","cbt","report-cards","timetable-generator","checkin","assignments","conduct","promotion","lesson_plans","support_plans","analytics","admin-data","settings","admissions","hr","certificates","activity_log","diary","surveys","announcements","messages","inbox","complaints","broadcast","voting","parent_meeting","gallery","eresources","birthdays","idcards","flyer","reports","directory","departments","parents","school_calendar","lost_found","fees","finance","leave","payments_online"],
   levels:  ["JSS 1","JSS 2","JSS 3","SSS 1","SSS 2","SSS 3"],
-  hmgLink: 'https://hmgconcepts.pages.dev/'
+  hmgLink: 'https://hmgconcepts.pages.dev/',
+  logoExt: 'jpg'
 };
 
 // Build the supabase client
@@ -26,4 +27,4 @@ const sb = (window.supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
-console.log('%c[God Of Seed Academy] School Connect ready.', 'color:#1c72e7;font-weight:bold;font-size:13px');
+console.log('%c[God Of Seed Academy] School Connect ready.', 'color:#b7bb2b;font-weight:bold;font-size:13px');

@@ -48,9 +48,29 @@ create table if not exists public.timetable_requirements (
   subject text not null,
   teacher text,
   periods_per_week int not null default 1,
+  -- ✨ Part-time support: the weekdays this (often part-time) teacher attends.
+  -- NULL/empty = available every weekday. e.g. ARRAY['Monday','Wednesday'].
+  available_days text[] default null,
+  is_part_time boolean default false,
   created_at timestamptz default now(),
   unique(class, subject)
 );
+-- backfill for older installs (idempotent)
+do $$ begin
+  alter table public.timetable_requirements add column if not exists available_days text[] default null;
+  alter table public.timetable_requirements add column if not exists is_part_time boolean default false;
+exception when undefined_table then null; end $$;
+
+-- Optional reusable teacher availability roster (one row per teacher).
+create table if not exists public.teacher_availability (
+  id uuid primary key default uuid_generate_v4(),
+  teacher text not null unique,
+  is_part_time boolean default false,
+  available_days text[] default null,   -- e.g. ARRAY['Tuesday','Thursday']
+  notes text,
+  created_at timestamptz default now()
+);
+alter table public.teacher_availability enable row level security;
 alter table public.timetable_requirements enable row level security;
 
 -- The generated, conflict-checked timetable grid lives in the existing
@@ -175,7 +195,7 @@ $$;
 do $$
 declare t text;
 declare staff_read text[] := array[
-  'timetable_requirements','timetable_runs','student_diary','surveys','menu_planner','i18n_strings'
+  'timetable_requirements','timetable_runs','teacher_availability','student_diary','surveys','menu_planner','i18n_strings'
 ];
 begin
   foreach t in array staff_read loop
@@ -234,15 +254,34 @@ begin
                  p_class, coalesce(p_session,''), coalesce(p_term,''));
 
   -- expand requirements into a queue and greedily place them
+  declare
+    v_days text[];        -- the days THIS teacher may be scheduled on
+    v_placed_this int;
+    unplaced int := 0;
+  begin
   for r in
-    select subject, teacher, periods_per_week
-    from public.timetable_requirements
-    where class = p_class
-    order by periods_per_week desc
+    select tr.subject, tr.teacher, tr.periods_per_week, tr.available_days, tr.is_part_time
+    from public.timetable_requirements tr
+    where tr.class = p_class
+    order by tr.periods_per_week desc
   loop
+    -- ✨ PART-TIME SUPPORT: restrict to the teacher's attending days.
+    -- Priority: requirement.available_days → teacher_availability roster → all weekdays.
+    v_days := r.available_days;
+    if v_days is null or array_length(v_days,1) is null then
+      select ta.available_days into v_days
+        from public.teacher_availability ta
+       where ta.teacher = r.teacher and ta.available_days is not null
+       limit 1;
+    end if;
+    if v_days is null or array_length(v_days,1) is null then
+      v_days := days;  -- full-time: every weekday
+    end if;
+
     for i in 1..r.periods_per_week loop
+      v_placed_this := 0;
       <<placeloop>>
-      for d in select unnest(days) loop
+      for d in select unnest(v_days) loop          -- only days the teacher attends
         for p in 1..p_periods_per_day loop
           -- class free at this slot?
           if exists (select 1 from public.timetable where class=p_class and day=d and period=p::text
@@ -258,16 +297,21 @@ begin
           insert into public.timetable (class, day, period, subject, teacher, session, term)
           values (p_class, d, p::text, r.subject, r.teacher, p_session, p_term);
           placed := placed + 1;
+          v_placed_this := 1;
           exit placeloop;
         end loop;
       end loop;
+      -- could not fit this period within the teacher's available days/periods
+      if v_placed_this = 0 then unplaced := unplaced + 1; end if;
     end loop;
   end loop;
 
   insert into public.timetable_runs (class, session, term, conflicts, notes)
-  values (p_class, p_session, p_term, conflicts, 'placed '||placed||' periods');
+  values (p_class, p_session, p_term, unplaced,
+          'placed '||placed||' periods'||(case when unplaced>0 then '; '||unplaced||' could not fit (check part-time availability/periods-per-day)' else '' end));
 
-  return jsonb_build_object('ok', true, 'placed', placed, 'class', p_class);
+  return jsonb_build_object('ok', true, 'placed', placed, 'unplaced', unplaced, 'class', p_class);
+  end;
 end; $$;
 
 grant execute on function public.generate_timetable(text,text,text,int) to authenticated;

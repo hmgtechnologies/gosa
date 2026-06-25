@@ -1,11 +1,11 @@
 {
-  "name": "God Of Seed Academy — School Connect",
+  "name": "God of Seed Academy  — School Connect",
   "short_name": "GOSA",
-  "description": "Excellence in Learning and Character",
+  "description": "Excellence in Learning and Character ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#b7bb2b",
+  "theme_color": "#9e31b9",
   "icons": [
     {
       "src": "assets/img/logo.jpg",

@@ -1,4 +1,4 @@
-# 🚀 Deployment Guide — God Of Seed Academy
+# 🚀 Deployment Guide — God of Seed Academy 
 
 This guide walks you from a freshly downloaded ZIP to a **live, working school
 portal** in about 15 minutes, using only **free tools** (Supabase free tier +

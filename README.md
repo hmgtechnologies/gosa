@@ -1,14 +1,14 @@
-# God Of Seed Academy — Comprehensive School Connect Platform
+# God of Seed Academy  — Comprehensive School Connect Platform
 
-Welcome to the official, enterprise-grade School Connect management platform generated specifically for **God Of Seed Academy**. This deployment package provides everything needed to establish a digital footprint for your institution, complete with progressive web application capabilities, advanced role-based access, and enterprise-level modules.
+Welcome to the official, enterprise-grade School Connect management platform generated specifically for **God of Seed Academy **. This deployment package provides everything needed to establish a digital footprint for your institution, complete with progressive web application capabilities, advanced role-based access, and enterprise-level modules.
 
 ## 🚀 Overview
 
 This fully-featured platform adapts to traditional and modern build deployments. It comes built-in with features like offline access, push notifications, row-level security, and a beautiful UI tailored to your specific branding choices.
 
-**School Motto:** Excellence in Learning and Character
-**Branding Theme:** theme1 (Primary: #b7bb2b, Accent: #5478b7)
-**Typography:** Inter
+**School Motto:** Excellence in Learning and Character 
+**Branding Theme:** theme8 (Primary: #9e31b9, Accent: #faac53)
+**Typography:** Roboto
 
 ---
 
@@ -59,9 +59,10 @@ Your platform is pre-configured with the following modules:
 - **Timetable Generator**
 - **QR Check-in**
 - **Assignments / Homework**
-- **Conduct / Behaviour**
 - **Promotion / Graduation**
+- **Integrated LMS**
 - **Lesson Plans & Curriculum**
+- **Behaviour & PBIS Points**
 - **Special Education / Support**
 - **Analytics Dashboard**
 - **Admin Data Console**
@@ -69,10 +70,9 @@ Your platform is pre-configured with the following modules:
 - **Admissions & Enrollment**
 - **HR & Payroll**
 - **Certificates & Documents**
-- **Audit / Activity Log**
 - **Student Diary**
-- **Surveys & Forms**
 - **Announcements**
+- **Surveys & Forms**
 - **Messaging (WA/Email)**
 - **In-App Inbox**
 - **Complaints & Grievance**
@@ -93,6 +93,7 @@ Your platform is pre-configured with the following modules:
 - **Fees & Payments**
 - **School Finance**
 - **Leave Management**
+- **Scholarships & Aid**
 - **Online Fee Payments**
 
 ---

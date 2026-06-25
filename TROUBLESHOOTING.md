@@ -1,4 +1,4 @@
-# 🩺 Troubleshooting — God Of Seed Academy
+# 🩺 Troubleshooting — God of Seed Academy 
 
 Common problems and their exact fixes. Find your symptom below.
 

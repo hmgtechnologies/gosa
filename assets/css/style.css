@@ -293,3 +293,126 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* =====================================================================
+   APP SHELL — logged-in dashboard layout (sidebar / topnav / cards)
+   These classes were previously missing, causing the disorganised UI
+   after login. This block styles the full authenticated experience.
+   ===================================================================== */
+
+.app-layout { display: flex; min-height: 100vh; background: var(--gray-100); }
+
+/* ---------- Sidebar ---------- */
+.app-sidebar {
+  width: 250px; flex-shrink: 0; background: var(--white);
+  border-right: 1px solid var(--gray-300);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 40;
+}
+.app-brand {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 18px; border-bottom: 1px solid var(--gray-300);
+}
+.app-brand img { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; flex-shrink: 0; background: var(--gray-100); }
+.app-brand strong { display: block; font-size: 0.95rem; font-weight: 800; color: var(--dark); line-height: 1.2; }
+
+.app-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; flex: 1; }
+.app-nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 10px;
+  color: var(--gray-700); text-decoration: none;
+  font-size: 0.9rem; font-weight: 600; line-height: 1;
+  transition: var(--transition); white-space: nowrap;
+}
+.app-nav a:hover { background: var(--gray-200); color: var(--primary); }
+.app-nav a.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.app-nav-icon {
+  width: 24px; min-width: 24px; height: 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.05rem; flex-shrink: 0;
+}
+
+/* ---------- Main area ---------- */
+.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.app-topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 24px; background: var(--white);
+  border-bottom: 1px solid var(--gray-300);
+  position: sticky; top: 0; z-index: 30;
+}
+.app-page-title { font-size: 1.25rem; font-weight: 800; color: var(--dark); margin: 0; }
+.app-content { padding: 24px; flex: 1; max-width: 1280px; width: 100%; }
+
+/* ---------- Layout variants ---------- */
+/* Top-navigation variant: nav becomes a horizontal bar on top */
+.app-layout.topnav { flex-direction: column; }
+.app-layout.topnav .app-sidebar {
+  width: 100%; height: auto; position: sticky; top: 0;
+  flex-direction: row; align-items: center; overflow-x: auto; overflow-y: hidden;
+  border-right: none; border-bottom: 1px solid var(--gray-300);
+}
+.app-layout.topnav .app-brand { border-bottom: none; border-right: 1px solid var(--gray-300); }
+.app-layout.topnav .app-nav { flex-direction: row; flex: 1; padding: 8px; gap: 4px; }
+.app-layout.topnav .app-nav a { flex-direction: column; gap: 4px; font-size: 0.7rem; padding: 8px 12px; text-align: center; }
+.app-layout.topnav .app-sidebar > div:last-child { display: none; }
+
+/* Card-hub variant: same sidebar, but content uses big cards (handled by markup) */
+.app-layout.cards .app-content .stats-grid { margin-bottom: 28px; }
+
+/* ---------- Dashboard cards & tables polish ---------- */
+.app-content .card { margin-bottom: 20px; }
+.app-content .card h3 { font-size: 1.05rem; font-weight: 800; color: var(--dark); margin-bottom: 6px; }
+.app-content .grid { display: grid; gap: 20px; }
+.app-content .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.app-content .grid-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--gray-300); }
+.table-wrap table { width: 100%; border-collapse: collapse; min-width: 480px; background: var(--white); }
+.table-wrap th { text-align: left; padding: 12px 14px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray-600); background: var(--gray-100); border-bottom: 1px solid var(--gray-300); }
+.table-wrap td { padding: 12px 14px; font-size: 0.9rem; color: var(--gray-800); border-bottom: 1px solid var(--gray-200); }
+.table-wrap tr:last-child td { border-bottom: none; }
+.pulse { color: var(--gray-500); }
+
+/* ---------- Dark mode for the app shell ---------- */
+[data-theme="dark"] .app-layout { background: #0b1220; }
+[data-theme="dark"] .app-sidebar,
+[data-theme="dark"] .app-topbar { background: #0f172a; border-color: #1e293b; }
+[data-theme="dark"] .app-brand { border-color: #1e293b; }
+[data-theme="dark"] .app-brand strong,
+[data-theme="dark"] .app-page-title { color: #e2e8f0; }
+[data-theme="dark"] .app-nav a { color: #94a3b8; }
+[data-theme="dark"] .app-nav a:hover { background: #1e293b; color: #fff; }
+[data-theme="dark"] .app-content .card { background: #0f172a; border-color: #1e293b; }
+[data-theme="dark"] .table-wrap, [data-theme="dark"] .table-wrap table { background: #0f172a; border-color: #1e293b; }
+[data-theme="dark"] .table-wrap th { background: #111c30; color: #94a3b8; }
+[data-theme="dark"] .table-wrap td { color: #cbd5e1; border-color: #1e293b; }
+
+/* ---------- High-contrast accessibility mode (toggled by enterprise.js) ---------- */
+body.sc-high-contrast { background: #fff; }
+body.sc-high-contrast .app-nav a,
+body.sc-high-contrast .app-page-title,
+body.sc-high-contrast .table-wrap td { color: #000 !important; }
+body.sc-high-contrast .app-nav a.active { background: #000 !important; color: #fff !important; }
+body.sc-high-contrast .card,
+body.sc-high-contrast .table-wrap { border: 2px solid #000 !important; }
+
+/* ---------- Responsive: sidebar becomes a slide-in drawer ---------- */
+@media (max-width: 900px) {
+  .app-sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; height: 100vh;
+    transform: translateX(-100%); transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .app-sidebar.open { transform: translateX(0); }
+  .app-layout.topnav .app-sidebar { position: sticky; transform: none; }
+  .app-content { padding: 16px; }
+}
+@media (min-width: 901px) {
+  .app-topbar .mobile-toggle { display: none; }
+}
+@media (max-width: 900px) {
+  .app-topbar .mobile-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--gray-100); border: 1px solid var(--gray-300);
+    border-radius: 8px; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer;
+  }
+}

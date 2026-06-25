@@ -1,6 +1,6 @@
 // School Connect Service Worker — offline + push
 const CACHE = 'sc-cache-v1';
-const CORE = ['./','./index.html','./login.html','./dashboard.html','./assets/css/style.css','./assets/js/config.js','./assets/js/app.js','./assets/js/notifications.js','./assets/js/voting.js','./assets/js/pwa-install.js','./assets/img/logo.jpg','./manifest.json'];
+const CORE = ['./','./index.html','./login.html','./dashboard.html','./assets/css/style.css','./assets/js/config.js','./assets/js/app.js','./assets/js/notifications.js','./assets/js/voting.js','./assets/js/pwa-install.js','./assets/js/super.js','./assets/js/cbt-engine.js','./assets/js/analytics.js','./assets/js/enterprise.js','./assets/img/logo.jpg','./manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(()=>self.skipWaiting()));

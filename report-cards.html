@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard • God Of Seed Academy</title>
-<meta name="description" content="God Of Seed Academy — Dashboard. Free school management platform by HMG Concepts.">
+<title>Report Cards • God Of Seed Academy</title>
+<meta name="description" content="God Of Seed Academy — Report Cards. Free school management platform by HMG Concepts.">
 <meta name="keywords" content="God Of Seed Academy, school management, GOSA, HMG Concepts">
 <meta name="theme-color" content="#b7bb2b">
 <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<meta property="og:title" content="Dashboard • God Of Seed Academy">
+<meta property="og:title" content="Report Cards • God Of Seed Academy">
 <meta property="og:description" content="God Of Seed Academy — Free school management by HMG Concepts">
 <meta property="og:image" content="assets/img/og-cover.svg">
 <meta property="og:type" content="website">
@@ -59,7 +59,7 @@
     <div id="modal-footer" class="modal-footer"></div>
   </div>
 </div>
-<div class="app-layout layout0" >
+<div class="app-layout layout0" data-require-role="staff">
   <aside class="app-sidebar" id="app-sidebar">
       <div class="app-brand">
         <img src="assets/img/logo.jpg" alt="God Of Seed Academy logo" style="object-fit:contain">
@@ -69,7 +69,7 @@
         </div>
       </div>
       <nav class="app-nav">
-        <a href="dashboard.html" class="active">
+        <a href="dashboard.html" class="">
           <span class="app-nav-icon">🏠</span>
           <span>Dashboard</span>
         </a><a href="students.html" class="">
@@ -222,7 +222,7 @@
   <main class="app-main">
     <header class="app-topbar">
       <button class="mobile-toggle" onclick="App.toggleSidebar()" title="Menu">☰</button>
-      <h1 class="app-page-title">Dashboard</h1>
+      <h1 class="app-page-title">Report Cards</h1>
       <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
         
         <button class="btn btn-sm btn-outline" onclick="App.toggleDarkMode()" title="Toggle theme">🌙</button>
@@ -231,18 +231,20 @@
     </header>
     <div class="app-content">
       
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="stat-students">—</div><div class="stat-label">Students</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-staff">—</div><div class="stat-label">Staff</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-fees">—</div><div class="stat-label">Fees Paid</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-announcements">—</div><div class="stat-label">Notices</div></div>
+      <div class="card" style="margin-bottom:16px">
+        <p style="color:var(--gray-600);margin:0 0 12px">Build a report card with <strong>fully custom columns</strong>
+        (e.g. CA1, CA2, Assignment, Project, Exam). Apportion a maximum mark to each column, then enter scores.
+        Columns marked <em>From CBT</em> are filled automatically when students take the matching online exam.</p>
+        <div class="grid grid-2">
+          <div class="form-group"><label>Class</label><input class="form-input" id="rc-class" placeholder="JSS1"></div>
+          <div class="form-group"><label>Subject</label><input class="form-input" id="rc-subject" placeholder="Mathematics"></div>
+          <div class="form-group"><label>Term</label><input class="form-input" id="rc-term" placeholder="First Term"></div>
+          <div class="form-group"><label>Session</label><input class="form-input" id="rc-session" placeholder="2025/2026"></div>
+        </div>
+        <button class="btn btn-primary" onclick="RC.load()">Load / Build</button>
       </div>
-      <div class="grid grid-2">
-        <div class="card"><h3>📢 Latest Announcements</h3><div id="dash-announcements" style="margin-top:12px"><span class="pulse">Loading…</span></div></div>
-        <div class="card"><h3>🗳️ Active Polls</h3><div id="dash-polls" style="margin-top:12px"><span class="pulse">Loading…</span></div><a href="voting.html" class="btn btn-outline btn-sm" style="margin-top:12px">All polls →</a></div>
-        <div class="card"><h3>🎂 Birthdays Today</h3><div id="dash-birthdays" style="margin-top:12px"><span class="pulse">Loading…</span></div></div>
-        <div class="card"><h3>📊 Quick Analytics</h3><canvas id="dash-chart" style="margin-top:12px;max-height:240px"></canvas></div>
-      </div>
+      <div id="rc-cols" data-staff-only></div>
+      <div id="rc-grid"></div>
     </div>
     <footer style="padding:20px 28px;border-top:1px solid var(--gray-200);font-size:0.82rem;color:var(--gray-500);text-align:center">
       © 2026 God Of Seed Academy · Powered by <a href="https://hmgconcepts.pages.dev/" target="_blank" rel="noopener">HMG Concepts</a>
@@ -265,4 +267,70 @@
   if (window.Super) Super.init(sb, window.SCHOOL);
   if (window.Enterprise) Enterprise.init(sb);
 </script>
-</body></html>
+<script>
+const RC = {
+  ctx:{}, cols:[], students:[],
+  ctxVals(){ return { class:document.getElementById('rc-class').value.trim(), subject:document.getElementById('rc-subject').value.trim(), term:document.getElementById('rc-term').value.trim(), session:document.getElementById('rc-session').value.trim() }; },
+  async load(){
+    if(!sb){ toast('Database not configured.','warning'); return; }
+    this.ctx=this.ctxVals();
+    if(!this.ctx.class||!this.ctx.subject){ toast('Enter class and subject.','warning'); return; }
+    const { data:cols } = await sb.from('assessment_columns').select('*').eq('class',this.ctx.class).eq('subject',this.ctx.subject).eq('term',this.ctx.term).eq('session',this.ctx.session).order('position');
+    this.cols=cols||[];
+    const { data:studs } = await sb.from('students').select('id,full_name,admission_no,class').eq('class',this.ctx.class).order('full_name');
+    this.students=studs||[];
+    this.renderCols(); await this.renderGrid();
+  },
+  renderCols(){
+    document.getElementById('rc-cols').innerHTML='<div class="card"><h3>Assessment columns</h3>'+
+      '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Max mark</th><th>Source</th><th></th></tr></thead><tbody>'+
+      this.cols.map(c=>'<tr><td>'+esc(c.name)+'</td><td>'+c.max_mark+'</td><td>'+(c.source==='cbt'?'<span class=\'badge\'>From CBT</span>':'Manual')+'</td><td><button class="btn btn-sm btn-outline" onclick="RC.delCol(\''+c.id+'\')">✕</button></td></tr>').join('')+
+      '</tbody></table></div>'+
+      '<div class="grid grid-2" style="margin-top:10px"><div class="form-group"><label>New column name</label><input class="form-input" id="rc-cn" placeholder="CA1"></div>'+
+      '<div class="form-group"><label>Max mark</label><input class="form-input" type="number" id="rc-cm" value="10"></div></div>'+
+      '<button class="btn btn-primary" onclick="RC.addCol()">+ Add column</button></div>';
+  },
+  async addCol(){
+    const name=document.getElementById('rc-cn').value.trim(); const max=parseFloat(document.getElementById('rc-cm').value)||10;
+    if(!name)return;
+    const { error } = await sb.from('assessment_columns').insert({ ...this.ctx, name, max_mark:max, position:this.cols.length });
+    if(error){ toast(error.message,'danger'); return; }
+    if(App&&App.logActivity)App.logActivity('create','assessment_column',name);
+    toast('Column added.','success'); this.load();
+  },
+  async delCol(id){ if(!confirm('Delete this column and its scores?'))return; await sb.from('assessment_columns').delete().eq('id',id); this.load(); },
+  async renderGrid(){
+    if(!this.cols.length){ document.getElementById('rc-grid').innerHTML='<div class="card">Add at least one column to start entering scores.</div>'; return; }
+    const ids=this.cols.map(c=>c.id);
+    const { data:scores } = await sb.from('report_scores').select('*').in('column_id',ids);
+    const map={}; (scores||[]).forEach(s=>{ map[(s.student_id_ref||s.student_name)+'|'+s.column_id]=s.score; });
+    const totalMax=this.cols.reduce((a,c)=>a+Number(c.max_mark),0);
+    let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Scores — '+esc(this.ctx.subject)+' ('+esc(this.ctx.class)+')</h3><button class="btn btn-sm btn-outline" onclick="RC.exportCSV()">⬇ Export</button></div><div class="table-wrap"><table><thead><tr><th>Student</th>'+this.cols.map(c=>'<th>'+esc(c.name)+'<br><small>/'+c.max_mark+'</small></th>').join('')+'<th>Total<br><small>/'+totalMax+'</small></th><th>%</th><th>Grade</th></tr></thead><tbody>';
+    const src=this.students.length?this.students:[];
+    if(!src.length){ html+='<tr><td colspan="'+(this.cols.length+4)+'">No students found for class "'+esc(this.ctx.class)+'". Add students in the Students module first.</td></tr>'; }
+    src.forEach(st=>{
+      const ref=st.admission_no||st.full_name;
+      let tot=0; const cells=this.cols.map(c=>{ const v=map[ref+'|'+c.id]; if(v!=null)tot+=Number(v); return '<td><input style="width:64px" class="form-input" type="number" data-ref="'+esc(ref)+'" data-name="'+esc(st.full_name)+'" data-col="'+c.id+'" data-max="'+c.max_mark+'" value="'+(v!=null?v:'')+'" onchange="RC.saveScore(this)"></td>'; }).join('');
+      const pct=totalMax?((tot/totalMax)*100).toFixed(1):0; const g=RC.grade(pct);
+      html+='<tr><td>'+esc(st.full_name)+'</td>'+cells+'<td><strong>'+tot.toFixed(1)+'</strong></td><td>'+pct+'%</td><td>'+g+'</td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+    document.getElementById('rc-grid').innerHTML=html;
+  },
+  grade(p){ p=Number(p); if(p>=70)return'A'; if(p>=60)return'B'; if(p>=50)return'C'; if(p>=45)return'D'; if(p>=40)return'E'; return'F'; },
+  async saveScore(el){
+    const max=Number(el.dataset.max); let v=parseFloat(el.value); if(isNaN(v))v=0; if(v>max){v=max;el.value=max;toast('Capped at max '+max,'warning');}
+    const row={ column_id:el.dataset.col, student_id_ref:el.dataset.ref, student_name:el.dataset.name, class:this.ctx.class, subject:this.ctx.subject, term:this.ctx.term, session:this.ctx.session, score:v, source:'manual' };
+    const { error } = await sb.from('report_scores').upsert(row,{ onConflict:'column_id,student_id_ref,student_name' });
+    if(error){ toast(error.message,'danger'); return; }
+    if(App&&App.logActivity)App.logActivity('update','report_score',el.dataset.ref);
+    this.renderGrid();
+  },
+  exportCSV(){
+    const rows=[['Student',...this.cols.map(c=>c.name),'Total','%','Grade']];
+    document.querySelectorAll('#rc-grid tbody tr').forEach(tr=>{ const cells=[...tr.children].map(td=>{ const inp=td.querySelector('input'); return inp?inp.value:td.textContent.trim(); }); rows.push(cells); });
+    const csv=rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='report-'+this.ctx.class+'-'+this.ctx.subject+'.csv'; a.click();
+  }
+};
+</script></body></html>

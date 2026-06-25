@@ -14,14 +14,23 @@
   <url><loc>/timetable.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/sow.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/cbt.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/report-cards.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/timetable-generator.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/checkin.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/assignments.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/conduct.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/promotion.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/lms.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/gamification.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/fees.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/finance.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/leave.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/lesson_plans.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/support_plans.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/analytics.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/admin-data.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/settings.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/admissions.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/hr.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/certificates.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/activity_log.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/diary.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/surveys.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/announcements.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/messages.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/inbox.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
@@ -33,15 +42,16 @@
   <url><loc>/eresources.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/birthdays.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/idcards.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/flyer.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/reports.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/directory.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/departments.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/parents.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/school_calendar.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>/lost_found.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/admissions.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/hr.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/certificates.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>/analytics.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/fees.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/finance.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/leave.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>/payments_online.html</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
   <url><loc>https://hmgconcepts.pages.dev/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>

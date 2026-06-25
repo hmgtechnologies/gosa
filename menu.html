@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard • God Of Seed Academy</title>
-<meta name="description" content="God Of Seed Academy — Dashboard. Free school management platform by HMG Concepts.">
+<title>Menu Planner • God Of Seed Academy</title>
+<meta name="description" content="God Of Seed Academy — Menu Planner. Free school management platform by HMG Concepts.">
 <meta name="keywords" content="God Of Seed Academy, school management, GOSA, HMG Concepts">
 <meta name="theme-color" content="#b7bb2b">
 <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<meta property="og:title" content="Dashboard • God Of Seed Academy">
+<meta property="og:title" content="Menu Planner • God Of Seed Academy">
 <meta property="og:description" content="God Of Seed Academy — Free school management by HMG Concepts">
 <meta property="og:image" content="assets/img/og-cover.svg">
 <meta property="og:type" content="website">
@@ -59,7 +59,7 @@
     <div id="modal-footer" class="modal-footer"></div>
   </div>
 </div>
-<div class="app-layout layout0" >
+<div class="app-layout layout0" data-require-role="any">
   <aside class="app-sidebar" id="app-sidebar">
       <div class="app-brand">
         <img src="assets/img/logo.jpg" alt="God Of Seed Academy logo" style="object-fit:contain">
@@ -69,7 +69,7 @@
         </div>
       </div>
       <nav class="app-nav">
-        <a href="dashboard.html" class="active">
+        <a href="dashboard.html" class="">
           <span class="app-nav-icon">🏠</span>
           <span>Dashboard</span>
         </a><a href="students.html" class="">
@@ -222,7 +222,7 @@
   <main class="app-main">
     <header class="app-topbar">
       <button class="mobile-toggle" onclick="App.toggleSidebar()" title="Menu">☰</button>
-      <h1 class="app-page-title">Dashboard</h1>
+      <h1 class="app-page-title">Menu Planner</h1>
       <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
         
         <button class="btn btn-sm btn-outline" onclick="App.toggleDarkMode()" title="Toggle theme">🌙</button>
@@ -231,18 +231,19 @@
     </header>
     <div class="app-content">
       
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-value" id="stat-students">—</div><div class="stat-label">Students</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-staff">—</div><div class="stat-label">Staff</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-fees">—</div><div class="stat-label">Fees Paid</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-announcements">—</div><div class="stat-label">Notices</div></div>
+      <div class="card" style="margin-bottom:16px"><p style="color:var(--gray-600);margin:0">
+        Plan weekly meals (breakfast/snack/lunch/supper) with allergen notes for parents.</p></div>
+      <div class="card" data-staff-only>
+        <div class="grid grid-2">
+          <div class="form-group"><label>Week starting</label><input class="form-input" type="date" id="mn-week"></div>
+          <div class="form-group"><label>Day</label><select class="form-select" id="mn-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select></div>
+          <div class="form-group"><label>Meal</label><select class="form-select" id="mn-meal"><option>breakfast</option><option>snack</option><option>lunch</option><option>supper</option></select></div>
+          <div class="form-group"><label>Allergens</label><input class="form-input" id="mn-all" placeholder="nuts, dairy"></div>
+        </div>
+        <div class="form-group"><label>Description</label><input class="form-input" id="mn-desc" placeholder="Jollof rice & chicken"></div>
+        <button class="btn btn-primary" onclick="MN.add()">+ Add meal</button>
       </div>
-      <div class="grid grid-2">
-        <div class="card"><h3>📢 Latest Announcements</h3><div id="dash-announcements" style="margin-top:12px"><span class="pulse">Loading…</span></div></div>
-        <div class="card"><h3>🗳️ Active Polls</h3><div id="dash-polls" style="margin-top:12px"><span class="pulse">Loading…</span></div><a href="voting.html" class="btn btn-outline btn-sm" style="margin-top:12px">All polls →</a></div>
-        <div class="card"><h3>🎂 Birthdays Today</h3><div id="dash-birthdays" style="margin-top:12px"><span class="pulse">Loading…</span></div></div>
-        <div class="card"><h3>📊 Quick Analytics</h3><canvas id="dash-chart" style="margin-top:12px;max-height:240px"></canvas></div>
-      </div>
+      <div id="mn-week-view" style="margin-top:16px"></div>
     </div>
     <footer style="padding:20px 28px;border-top:1px solid var(--gray-200);font-size:0.82rem;color:var(--gray-500);text-align:center">
       © 2026 God Of Seed Academy · Powered by <a href="https://hmgconcepts.pages.dev/" target="_blank" rel="noopener">HMG Concepts</a>
@@ -265,4 +266,12 @@
   if (window.Super) Super.init(sb, window.SCHOOL);
   if (window.Enterprise) Enterprise.init(sb);
 </script>
-</body></html>
+<script>
+const MN={
+  async add(){ const w=document.getElementById('mn-week').value; if(!w){toast('Pick week','warning');return;}
+    await Enterprise.menu.set(w,document.getElementById('mn-day').value,document.getElementById('mn-meal').value,document.getElementById('mn-desc').value,document.getElementById('mn-all').value);
+    toast('Meal added','success'); MN.view(w); },
+  async view(w){ const {data}=await Enterprise.menu.week(w);
+    document.getElementById('mn-week-view').innerHTML='<div class="card"><h3>Menu — week of '+esc(w)+'</h3><div class="table-wrap"><table><thead><tr><th>Day</th><th>Meal</th><th>Description</th><th>Allergens</th></tr></thead><tbody>'+(data||[]).map(m=>'<tr><td>'+esc(m.day)+'</td><td>'+esc(m.meal)+'</td><td>'+esc(m.description||'')+'</td><td>'+esc(m.allergens||'')+'</td></tr>').join('')+'</tbody></table></div></div>'; }
+};
+</script></body></html>

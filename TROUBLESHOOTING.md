@@ -1,4 +1,4 @@
-# 🩺 Troubleshooting — God of Seed Academy 
+# 🩺 Troubleshooting — God of Seed Academy
 
 Common problems and their exact fixes. Find your symptom below.
 
@@ -11,6 +11,24 @@ tables they use.
 then the functions, then the policies — so this error cannot occur. Re-run it; it
 is safe to run more than once. (Do not run `voting-schema.sql` first; the main
 schema already includes voting.)
+
+---
+
+### ❌ `ERROR: 42P16: cannot drop columns from view`
+**Cause:** an OLDER version of a view (e.g. `poll_results` or `report_subject_totals`)
+already exists in your Supabase project, and `CREATE OR REPLACE VIEW` cannot change an
+existing view's columns.
+**Fix:** Use the SQL files **from this ZIP** — they now run `DROP VIEW IF EXISTS … CASCADE`
+before creating each view, so re-running is always safe. (If you prefer, you can also run
+`drop view if exists public.poll_results cascade; drop view if exists public.report_subject_totals cascade;`
+once, then re-run the schema.)
+
+### ❌ `ERROR: column "voter_id" does not exist` (or similar)
+**Cause:** a table from an OLD schema version is missing a column the new security policies
+need (`CREATE TABLE IF NOT EXISTS` does not add columns to existing tables).
+**Fix:** Use the SQL files **from this ZIP** — they include an idempotent
+`ALTER TABLE … ADD COLUMN IF NOT EXISTS` backfill that repairs old tables automatically.
+Just re-run `database/schema.sql`.
 
 ---
 
@@ -36,8 +54,8 @@ Check each item:
 ### ❌ My uploaded school logo does not show (a default badge appears instead)
 **Cause (old version):** pages hard-coded `logo.svg` while your uploaded PNG/JPG was
 saved as `logo.png`/`logo.jpg`, so the `<img>` pointed at a file that did not exist.
-**Fix (this version):** every page now references **`logo.jpg`** — the exact
-file that was packaged. Your logo file in this ZIP is **`assets/img/logo.jpg`**.
+**Fix (this version):** every page now references **`logo.svg`** — the exact
+file that was packaged. Your logo file in this ZIP is **`assets/img/logo.svg`**.
 To change it later, replace that file (keep the same name) and re-upload.
 
 ---

@@ -1,14 +1,14 @@
-# God of Seed Academy  — Comprehensive School Connect Platform
+# God of Seed Academy — Comprehensive School Connect Platform
 
-Welcome to the official, enterprise-grade School Connect management platform generated specifically for **God of Seed Academy **. This deployment package provides everything needed to establish a digital footprint for your institution, complete with progressive web application capabilities, advanced role-based access, and enterprise-level modules.
+Welcome to the official, enterprise-grade School Connect management platform generated specifically for **God of Seed Academy**. This deployment package provides everything needed to establish a digital footprint for your institution, complete with progressive web application capabilities, advanced role-based access, and enterprise-level modules.
 
 ## 🚀 Overview
 
 This fully-featured platform adapts to traditional and modern build deployments. It comes built-in with features like offline access, push notifications, row-level security, and a beautiful UI tailored to your specific branding choices.
 
-**School Motto:** Excellence in Learning and Character 
-**Branding Theme:** theme8 (Primary: #9e31b9, Accent: #faac53)
-**Typography:** Roboto
+**School Motto:** Excellence in Learning and Character
+**Branding Theme:** theme2 (Primary: #1c72e7, Accent: #5e2174)
+**Typography:** Titillium Web
 
 ---
 
@@ -61,9 +61,9 @@ Your platform is pre-configured with the following modules:
 - **Assignments / Homework**
 - **Promotion / Graduation**
 - **Integrated LMS**
+- **PBIS & Gamification**
 - **Lesson Plans & Curriculum**
 - **Behaviour & PBIS Points**
-- **Special Education / Support**
 - **Analytics Dashboard**
 - **Admin Data Console**
 - **Settings (2FA · Language · A11y)**
@@ -71,8 +71,8 @@ Your platform is pre-configured with the following modules:
 - **HR & Payroll**
 - **Certificates & Documents**
 - **Student Diary**
-- **Announcements**
 - **Surveys & Forms**
+- **Announcements**
 - **Messaging (WA/Email)**
 - **In-App Inbox**
 - **Complaints & Grievance**

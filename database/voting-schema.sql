@@ -91,6 +91,16 @@ create table if not exists public.poll_votes (
 );
 alter table public.poll_votes enable row level security;
 
+-- Column backfill (idempotent) — guarantees columns the RLS policies need
+-- exist even if poll_votes/polls were created by an OLDER schema version.
+-- Prevents: ERROR: column "voter_id" does not exist.
+do $$ begin
+  alter table public.poll_votes add column if not exists voter_id uuid;
+  alter table public.poll_votes add column if not exists candidate_id text;
+  alter table public.poll_votes add column if not exists poll_id uuid;
+  alter table public.polls      add column if not exists status text default 'open';
+exception when undefined_table then null; end $$;
+
 
 -- ========================================================
 -- 3. RLS POLICIES
@@ -111,6 +121,8 @@ create policy "pv_update" on public.poll_votes for update using (auth.uid() = vo
 -- ========================================================
 -- 4. LIVE-RESULTS VIEW (fixed aggregate — counts votes correctly)
 -- ========================================================
+-- Drop first so re-runs never hit 42P16 "cannot drop columns from view".
+drop view if exists public.poll_results cascade;
 create or replace view public.poll_results as
 select p.id as poll_id, p.title,
        coalesce(sum(v.c), 0) as total_votes,

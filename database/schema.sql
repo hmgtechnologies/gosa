@@ -617,6 +617,52 @@ alter table public.payment_intents enable row level security;
 
 
 -- ========================================================
+-- 2.5 COLUMN BACKFILL (idempotent upgrade-safety)
+-- --------------------------------------------------------
+-- "create table if not exists" does NOT add missing columns to a table that
+-- already exists from an OLDER schema version. If a policy/view references a
+-- column the old table lacks, you get errors like:
+--   ERROR: column "voter_id" does not exist
+-- These ALTERs guarantee every column the policies & views depend on exists,
+-- on both fresh and previously-installed databases. Safe to re-run.
+-- ========================================================
+do $$ begin
+  -- profiles
+  alter table public.profiles            add column if not exists role text not null default 'student';
+  alter table public.profiles            add column if not exists status text not null default 'pending';
+  alter table public.profiles            add column if not exists email text;
+  -- voting
+  alter table public.poll_votes          add column if not exists voter_id uuid;
+  alter table public.poll_votes          add column if not exists candidate_id text;
+  alter table public.poll_votes          add column if not exists poll_id uuid;
+  alter table public.polls               add column if not exists status text default 'open';
+  -- attendance / results scoping
+  alter table public.attendance          add column if not exists student_id uuid;
+  alter table public.results             add column if not exists student_id uuid;
+  alter table public.conduct             add column if not exists student_id uuid;
+  alter table public.health              add column if not exists student_id uuid;
+  alter table public.fee_payments        add column if not exists student_id uuid;
+  alter table public.fee_payments        add column if not exists amount_paid numeric;
+  -- messaging / complaints / helpdesk participants
+  alter table public.messages            add column if not exists from_id uuid;
+  alter table public.messages            add column if not exists to_id uuid;
+  alter table public.complaints          add column if not exists submitted_by uuid;
+  alter table public.helpdesk_tickets    add column if not exists submitted_by uuid;
+  -- parent-child link
+  alter table public.parent_child        add column if not exists parent_id uuid;
+  alter table public.parent_child        add column if not exists student_id uuid;
+  -- push subscriptions
+  alter table public.push_subscriptions  add column if not exists user_id uuid;
+  -- payment intents
+  alter table public.payment_intents     add column if not exists student_id uuid;
+exception when undefined_table then
+  -- a referenced table doesn't exist yet on this DB; the create-table block
+  -- above already created it this run, so nothing to backfill — ignore.
+  null;
+end $$;
+
+
+-- ========================================================
 -- 3. HELPER FUNCTIONS  (now safe — tables already exist)
 -- ========================================================
 create or replace function public.is_staff(uid uuid)
@@ -865,6 +911,9 @@ create policy "al_insert" on public.activity_log for insert with check (auth.rol
 -- =====================================================================
 -- 6. CONVENIENCE VIEW — live poll results
 -- =====================================================================
+-- Drop first so re-runs never hit 42P16 "cannot drop columns from view"
+-- (an older poll_results view from a previous schema version may exist).
+drop view if exists public.poll_results cascade;
 create or replace view public.poll_results as
 select p.id as poll_id, p.title,
        coalesce(sum(v.c), 0) as total_votes,

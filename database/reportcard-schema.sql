@@ -186,6 +186,8 @@ begin
 end; $$;
 
 -- A convenience view: each student's subject total across all columns.
+-- Drop first so re-runs never hit 42P16 "cannot drop columns from view".
+drop view if exists public.report_subject_totals cascade;
 create or replace view public.report_subject_totals as
 select rs.class, rs.subject, rs.term, rs.session,
        rs.student_id_ref, rs.student_name,

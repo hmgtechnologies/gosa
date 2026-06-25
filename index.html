@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>God Of Seed Academy • God Of Seed Academy</title>
+<meta name="description" content="God Of Seed Academy — God Of Seed Academy. Free school management platform by HMG Concepts.">
+<meta name="keywords" content="God Of Seed Academy, school management, GOSA, HMG Concepts">
+<meta name="theme-color" content="#1c72e7">
+<link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<meta property="og:title" content="God Of Seed Academy • God Of Seed Academy">
+<meta property="og:description" content="God Of Seed Academy — Free school management by HMG Concepts">
+<meta property="og:image" content="assets/img/og-cover.svg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-theme="theme2" data-school="God Of Seed Academy" data-font="inter">
+<div id="notif-bell" class="notif-bell" title="Notifications" data-chatbot>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+  <span id="notif-badge" class="notif-badge" style="display:none">0</span>
+  <div id="notif-dropdown" class="notif-dropdown">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--gray-200);display:flex;justify-content:space-between;align-items:center">
+      <strong style="color:var(--dark)">Notifications</strong>
+      <button class="btn btn-sm btn-outline" onclick="Notifications.markAllRead()">Mark all read</button>
+    </div>
+    <div id="notif-list"><div class="toast-msg" style="padding:24px;text-align:center">Loading…</div></div>
+  </div>
+</div>
+
+<div id="pwa-install-banner" class="pwa-install">
+  <div class="pwa-install-header">
+    <img src="assets/img/logo.svg" alt="" class="pwa-install-icon">
+    <div style="flex:1">
+      <div class="pwa-install-title">📲 Install School Connect</div>
+      <div class="pwa-install-msg">Get push notifications for messages, broadcasts, polls and result slips — even when the app is closed.</div>
+    </div>
+    <button class="modal-close" data-pwa-action="dismiss" title="Dismiss">×</button>
+  </div>
+  <div class="pwa-install-actions">
+    <button class="btn btn-outline btn-sm" data-pwa-action="never">Not now</button>
+    <button class="btn btn-primary btn-sm" data-pwa-action="install">Install App</button>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div><div id="modal-backdrop" class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="modal-title">Modal</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+    <div id="modal-footer" class="modal-footer"></div>
+  </div>
+</div>
+<style>
+  .hero-enhanced { text-align: center; padding: 120px 20px 80px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border-radius: 0 0 40px 40px; margin-bottom: 60px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+  .hero-enhanced h1 { font-size: 3.5rem; font-weight: 900; margin-bottom: 20px; line-height: 1.1; letter-spacing: -1px; }
+  .hero-enhanced p { font-size: 1.25rem; max-width: 600px; margin: 0 auto 40px; opacity: 0.9; }
+  .hero-enhanced .btn-group { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+  .btn-white { background: white; color: var(--primary); font-weight: bold; padding: 14px 28px; border-radius: 30px; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; display: inline-block; }
+  .btn-white:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+  .btn-outline-white { background: transparent; color: white; border: 2px solid white; font-weight: bold; padding: 12px 28px; border-radius: 30px; text-decoration: none; transition: background 0.2s, color 0.2s; display: inline-block; }
+  .btn-outline-white:hover { background: white; color: var(--primary); }
+  .stats-bar { display: flex; justify-content: center; gap: 40px; margin-top: 60px; flex-wrap: wrap; }
+  .stat-item { text-align: center; }
+  .stat-value { font-size: 2.5rem; font-weight: 800; display: block; }
+  .stat-label { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; }
+  .feature-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; border: 1px solid var(--gray-200); }
+  .feature-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+  .feature-card .icon-wrapper { width: 60px; height: 60px; border-radius: 16px; background: rgba(var(--primary-rgb), 0.1); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; color: var(--primary); }
+</style>
+<div class="hero-enhanced">
+  <div style="display:inline-flex;align-items:center;background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-size:0.9rem;font-weight:600;margin-bottom:24px;">
+    <span style="margin-right:8px">🎓</span> Official School Portal
+  </div>
+  <h1>Welcome to God Of Seed Academy</h1>
+  <p>Excellent in Character and Academics</p>
+  <div class="btn-group">
+    <a href="login.html" class="btn-white">Sign in to Portal</a>
+    <a href="about.html" class="btn-outline-white">Learn More</a>
+  </div>
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-value">100%</span><span class="stat-label">Secure</span></div>
+    <div class="stat-item"><span class="stat-value">24/7</span><span class="stat-label">Access</span></div>
+    <div class="stat-item"><span class="stat-value">Real-time</span><span class="stat-label">Updates</span></div>
+  </div>
+</div>
+
+<div class="container" style="padding:0 24px 80px;max-width:1200px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:60px">
+    <h2 style="font-size:2.2rem;font-weight:800;color:var(--dark);margin-bottom:16px">Why Choose Our Portal?</h2>
+    <p style="color:var(--gray-600);font-size:1.1rem;max-width:600px;margin:0 auto">Experience the next generation of academic management with enterprise-grade features.</p>
+  </div>
+  <div class="grid grid-3" style="gap:30px">
+    <div class="feature-card">
+      <div class="icon-wrapper">📊</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Real-time Results</h3>
+      <p style="color:var(--gray-600);line-height:1.6">Continuous assessment, exam scores, and CBT marks updated instantly and securely.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrapper">📱</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Installable Mobile App</h3>
+      <p style="color:var(--gray-600);line-height:1.6">Install directly on your phone for instant push notifications and fast, offline access.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrapper">🗳️</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Digital Voting</h3>
+      <p style="color:var(--gray-600);line-height:1.6">Participate in school elections, polls, and prefect voting securely from your device.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrapper">💰</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Seamless Fee Tracking</h3>
+      <p style="color:var(--gray-600);line-height:1.6">View real-time fee balances, download printable receipts, and check payment history.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrapper">📢</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Multi-channel Broadcasts</h3>
+      <p style="color:var(--gray-600);line-height:1.6">Stay updated with critical announcements via WhatsApp, email, and push alerts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrapper">🔒</div>
+      <h3 style="font-size:1.2rem;margin-bottom:12px;color:var(--dark)">Enterprise Security</h3>
+      <p style="color:var(--gray-600);line-height:1.6">Bank-grade Row-Level Security ensures your family's data remains private and protected.</p>
+    </div>
+  </div>
+  
+  <div style="margin-top:80px;background:var(--gray-100);border-radius:24px;padding:60px 40px;text-align:center">
+    <h2 style="font-size:2rem;font-weight:800;color:var(--dark);margin-bottom:20px">Ready to get started?</h2>
+    <p style="color:var(--gray-600);margin-bottom:32px;font-size:1.1rem">Join the community and experience seamless academic tracking.</p>
+    <a href="login.html" class="btn btn-primary btn-lg" style="padding:16px 40px;border-radius:30px;font-size:1.1rem">Access Portal Now</a>
+  </div>
+
+  <div style="text-align:center;margin-top:60px;color:var(--gray-500);font-size:0.85rem">
+    Powered by the HMG Academy Ecosystem | Built by <a href="https://hmgconcepts.pages.dev/" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600">HMG Concepts</a>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/notifications.js"></script>
+<script src="assets/js/pwa-install.js"></script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(reg => Notifications.init(sb, reg));
+else Notifications.init(sb);
+PWAInstall.init();
+</script>
+</body></html>
